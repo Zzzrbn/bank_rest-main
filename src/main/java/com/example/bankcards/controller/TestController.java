@@ -35,12 +35,12 @@ public class TestController {
         );
     }
 
-    @GetMapping("/user/profile")
-    public Map<String, Object> userProfile(Authentication authentication) {
-        return Map.of(
-            "message", "User profile endpoint",
-            "username", authentication.getName(),
-            "authorities", authentication.getAuthorities()
-        );
-    }
+//    @GetMapping("/user/profile")
+//    public Map<String, Object> userProfile(Authentication authentication) {
+//        return Map.of(
+//            "message", "User profile endpoint",
+//            "username", authentication.getName(),
+//            "authorities", authentication.getAuthorities()
+//        );
+//    }
 }
