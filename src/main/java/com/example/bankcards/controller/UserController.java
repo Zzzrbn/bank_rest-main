@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.bankcards.dto.response.UserResponse;
 import com.example.bankcards.entity.User;
 import com.example.bankcards.repository.UserRepository;
-import com.example.bankcards.service.UserServiceImpl;
 
 import java.util.Map;
 

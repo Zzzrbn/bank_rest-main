@@ -24,6 +24,9 @@ jwt:
   secret: bankRestMainMySecretKeyForJWTIsForMyTestApplication
   expiration: 86400000
 
+encryption:
+  key: shifrovanieDlyaNomerovCart
+
 logging:
   level:
     com.example.bankcards: INFO
