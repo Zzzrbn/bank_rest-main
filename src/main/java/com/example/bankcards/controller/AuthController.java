@@ -41,15 +41,18 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-        // Проверяем существование пользователя
+
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username already exists: " + request.getUsername());
+            throw new RuntimeException("Имя пользователя уже занято");
         }
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists: " + request.getEmail());
+            throw new RuntimeException("Email уже используется");
         }
 
-        // Создаем нового пользователя
+        if (request.getPassword().length() < 6) {
+            throw new RuntimeException("Пароль должен быть не менее 6 символов");
+        }
+
         User user = new User();
         user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
@@ -62,11 +65,9 @@ public class AuthController {
 
         User savedUser = userRepository.save(user);
 
-        // Генерируем токен
         UserDetails userDetails = userDetailsService.loadUserByUsername(savedUser.getUsername());
         String jwtToken = jwtService.generateToken(userDetails);
 
-        // Создаем ответ
         AuthResponse authResponse = new AuthResponse();
         authResponse.setToken(jwtToken);
         authResponse.setUser(mapToUserResponse(savedUser));

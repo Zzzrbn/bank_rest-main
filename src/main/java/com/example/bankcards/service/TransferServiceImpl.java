@@ -2,6 +2,9 @@ package com.example.bankcards.service;
 
 
 import lombok.RequiredArgsConstructor;
+
+import java.math.BigDecimal;
+
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,32 +31,37 @@ public class TransferServiceImpl implements TransferService{
     @Override
     @Transactional
     public TransferResponse transferBetweenOwnCards(Long userId, TransferRequest request) {
+        
+    	if (request.getFromCardId().equals(request.getToCardId())) {
+            throw new RuntimeException("Нельзя переводить на ту же карту");
+        }
+
+        if (request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RuntimeException("Сумма перевода должна быть больше нуля");
+        }
+
         Card fromCard = cardRepository.findByIdAndUserId(request.getFromCardId(), userId)
-                .orElseThrow(() -> new RuntimeException("Card not found or not owned by user"));
+                .orElseThrow(() -> new RuntimeException("Карта отправителя не найдена или вам не принадлежит"));
 
         Card toCard = cardRepository.findByIdAndUserId(request.getToCardId(), userId)
-                .orElseThrow(() -> new RuntimeException("Card not found or not owned by user"));
-
+                .orElseThrow(() -> new RuntimeException("Карта получателя не найдена или вам не принадлежит"));
 
         if (!fromCard.isActive()) {
-            throw new RuntimeException("Source card is not active");
+            throw new RuntimeException("Карта отправителя не активна");
         }
         if (!toCard.isActive()) {
-            throw new RuntimeException("Destination card is not active");
+            throw new RuntimeException("Карта получателя не активна");
         }
-
 
         if (fromCard.getBalance().compareTo(request.getAmount()) < 0) {
-            throw new RuntimeException("Not enough money on source card");
+            throw new RuntimeException("Недостаточно средств на карте отправителя");
         }
-
 
         fromCard.setBalance(fromCard.getBalance().subtract(request.getAmount()));
         toCard.setBalance(toCard.getBalance().add(request.getAmount()));
 
         cardRepository.save(fromCard);
         cardRepository.save(toCard);
-
 
         Transfer transfer = new Transfer();
         transfer.setFromCard(fromCard);

@@ -32,25 +32,36 @@ public class CardServiceImpl implements CardService {
 	@Override
 	@Transactional
 	public CardResponse createCard(CardCreateRequest request) {
-		User user = userRepository.findById(request.getUserId())
-				.orElseThrow(() -> new RuntimeException("User not found with id: " + request.getUserId()));
 
-		String cardNumber = generateCardNumber();
-		String encryptedCardNumber = encryptionUtil.encrypt(cardNumber);
-		String cardNumberHash = encryptionUtil.hash(cardNumber);
+        if (request.getExpiryDate().isBefore(LocalDate.now())) {
+            throw new RuntimeException("Дата истечения карты должна быть в будущем");
+        }
 
-		Card card = new Card();
-		card.setCardNumber(encryptedCardNumber);
-		card.setCardNumberHash(cardNumberHash);
-		card.setCardHolder(request.getCardHolder());
-		card.setExpiryDate(request.getExpiryDate());
-		card.setStatus(CardStatus.ACTIVE);
-		card.setBalance(request.getInitialBalance() != null ? request.getInitialBalance() : BigDecimal.ZERO);
-		card.setUser(user);
 
-		Card savedCard = cardRepository.save(card);
-		return mapToCardResponse(savedCard, cardNumber);
-	}
+        if (request.getInitialBalance().compareTo(BigDecimal.ZERO) < 0) {
+            throw new RuntimeException("Начальный баланс не может быть отрицательным");
+        }
+
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+
+
+        String cardNumber = generateCardNumber();
+        String encryptedCardNumber = encryptionUtil.encrypt(cardNumber);
+        String cardNumberHash = encryptionUtil.hash(cardNumber);
+
+        Card card = new Card();
+        card.setCardNumber(encryptedCardNumber);
+        card.setCardNumberHash(cardNumberHash);
+        card.setCardHolder(request.getCardHolder());
+        card.setExpiryDate(request.getExpiryDate());
+        card.setStatus(CardStatus.ACTIVE);
+        card.setBalance(request.getInitialBalance());
+        card.setUser(user);
+
+        Card savedCard = cardRepository.save(card);
+        return mapToCardResponse(savedCard, cardNumber);
+    }
 
 	@Override
 	public CardResponse getCardById(Long id) {

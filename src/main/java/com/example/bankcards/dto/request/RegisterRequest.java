@@ -2,24 +2,27 @@ package com.example.bankcards.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
 public class RegisterRequest {
 
-    @NotBlank(message = "Username is required")
+    @NotBlank(message = "Имя пользователя обязательно")
+    @Size(min = 3, max = 20, message = "Имя пользователя должно быть от 3 до 20 символов")
     private String username;
 
-    @NotBlank(message = "Password is required")
+    @NotBlank(message = "Пароль обязателен")
+    @Size(min = 6, message = "Пароль должен быть не менее 6 символов")
     private String password;
 
-    @Email(message = "Email should be valid")
-    @NotBlank(message = "Email is required")
+    @Email(message = "Email должен быть валидным")
+    @NotBlank(message = "Email обязателен")
     private String email;
 
-    @NotBlank(message = "First name is required")
+    @NotBlank(message = "Имя обязательно")
     private String firstName;
 
-    @NotBlank(message = "Last name is required")
+    @NotBlank(message = "Фамилия обязательна")
     private String lastName;
 }
