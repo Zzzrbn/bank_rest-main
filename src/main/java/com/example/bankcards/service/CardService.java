@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import com.example.bankcards.dto.request.CardCreateRequest;
+import com.example.bankcards.dto.request.CardSearchRequest;
 import com.example.bankcards.dto.request.CardUpdateRequest;
 import com.example.bankcards.dto.response.CardResponse;
 import com.example.bankcards.entity.enums.CardStatus;
@@ -26,4 +27,5 @@ public interface CardService {
 
 	boolean isCardOwnedByUser(Long cardId, Long userId);
 
+	Page<CardResponse> searchUserCards(Long userId, CardSearchRequest searchRequest, Pageable pageable);
 }

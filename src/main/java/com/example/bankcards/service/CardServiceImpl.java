@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.bankcards.dto.request.CardCreateRequest;
+import com.example.bankcards.dto.request.CardSearchRequest;
 import com.example.bankcards.dto.request.CardUpdateRequest;
 import com.example.bankcards.dto.response.CardResponse;
 import com.example.bankcards.entity.Card;
@@ -154,4 +155,31 @@ public class CardServiceImpl implements CardService {
 		String lastFour = cardNumber.substring(cardNumber.length() - 4);
 		return "**** **** **** " + lastFour;
 	}
+	
+	@Override
+	public Page<CardResponse> searchUserCards(Long userId, CardSearchRequest searchRequest, Pageable pageable) {
+		Page<Card> cardsPage;
+
+		if (searchRequest.getStatus() != null && searchRequest.getSearch() != null) {
+			cardsPage = cardRepository.findByUserIdAndStatusAndCardHolderContaining(userId, searchRequest.getStatus(),
+					searchRequest.getSearch(), pageable);
+		} else if (searchRequest.getStatus() != null) {
+			cardsPage = cardRepository.findByUserIdAndStatus(userId, searchRequest.getStatus(), pageable);
+		} else if (searchRequest.getSearch() != null) {
+			cardsPage = cardRepository.findByUserIdAndCardHolderContaining(userId, searchRequest.getSearch(), pageable);
+		} else if (searchRequest.getMinBalance() != null) {
+			cardsPage = cardRepository.findByUserIdAndBalanceGreaterThan(userId, searchRequest.getMinBalance(),
+					pageable);
+		} else if (searchRequest.getMaxBalance() != null) {
+			cardsPage = cardRepository.findByUserIdAndBalanceLessThan(userId, searchRequest.getMaxBalance(), pageable);
+		} else {
+			cardsPage = cardRepository.findByUserId(userId, pageable);
+		}
+		return cardsPage.map(card -> {
+			String decryptedCardNumber = encryptionUtil.decrypt(card.getCardNumber());
+			return mapToCardResponse(card, decryptedCardNumber);
+		});
+	}
+
+	
 }
