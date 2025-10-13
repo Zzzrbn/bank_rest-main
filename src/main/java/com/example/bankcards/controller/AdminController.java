@@ -11,13 +11,9 @@ import java.util.Map;
 @RequestMapping("/api/admin")
 public class AdminController {
 
-    @GetMapping("/dashboard")
-    public Map<String, Object> adminDashboard(Authentication authentication) {
-        return Map.of(
-            "message", "Welcome to Admin Dashboard",
-            "username", authentication.getName(),
-            "role", "ADMIN",
-            "access", "Full system access"
-        );
-    }
+	@GetMapping("/dashboard")
+	public Map<String, Object> adminDashboard(Authentication authentication) {
+		return Map.of("message", "Welcome to Admin Dashboard", "username", authentication.getName(), "role", "ADMIN",
+				"access", "Full system access");
+	}
 }

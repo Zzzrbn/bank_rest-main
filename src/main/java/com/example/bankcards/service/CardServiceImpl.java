@@ -1,6 +1,8 @@
 package com.example.bankcards.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +23,7 @@ import com.example.bankcards.security.EncryptionUtil;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CardServiceImpl implements CardService {
@@ -33,36 +36,35 @@ public class CardServiceImpl implements CardService {
 	@Override
 	@Transactional
 	public CardResponse createCard(CardCreateRequest request) {
+		log.info("Создание карты для пользователя ID: {}", request.getUserId());
+		if (request.getExpiryDate().isBefore(LocalDate.now())) {
+			throw new RuntimeException("Дата истечения карты должна быть в будущем");
+		}
 
-        if (request.getExpiryDate().isBefore(LocalDate.now())) {
-            throw new RuntimeException("Дата истечения карты должна быть в будущем");
-        }
+		if (request.getInitialBalance().compareTo(BigDecimal.ZERO) < 0) {
+			throw new RuntimeException("Начальный баланс не может быть отрицательным");
+		}
 
+		User user = userRepository.findById(request.getUserId())
+				.orElseThrow(() -> new RuntimeException("Пользователь не найден"));
 
-        if (request.getInitialBalance().compareTo(BigDecimal.ZERO) < 0) {
-            throw new RuntimeException("Начальный баланс не может быть отрицательным");
-        }
+		String cardNumber = generateCardNumber();
+		String encryptedCardNumber = encryptionUtil.encrypt(cardNumber);
+		String cardNumberHash = encryptionUtil.hash(cardNumber);
 
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+		Card card = new Card();
+		card.setCardNumber(encryptedCardNumber);
+		card.setCardNumberHash(cardNumberHash);
+		card.setCardHolder(request.getCardHolder());
+		card.setExpiryDate(request.getExpiryDate());
+		card.setStatus(CardStatus.ACTIVE);
+		card.setBalance(request.getInitialBalance());
+		card.setUser(user);
 
-
-        String cardNumber = generateCardNumber();
-        String encryptedCardNumber = encryptionUtil.encrypt(cardNumber);
-        String cardNumberHash = encryptionUtil.hash(cardNumber);
-
-        Card card = new Card();
-        card.setCardNumber(encryptedCardNumber);
-        card.setCardNumberHash(cardNumberHash);
-        card.setCardHolder(request.getCardHolder());
-        card.setExpiryDate(request.getExpiryDate());
-        card.setStatus(CardStatus.ACTIVE);
-        card.setBalance(request.getInitialBalance());
-        card.setUser(user);
-
-        Card savedCard = cardRepository.save(card);
-        return mapToCardResponse(savedCard, cardNumber);
-    }
+		Card savedCard = cardRepository.save(card);
+		log.info("Карта для пользователя {} создана", user.getUsername());
+		return mapToCardResponse(savedCard, cardNumber);
+	}
 
 	@Override
 	public CardResponse getCardById(Long id) {
@@ -122,9 +124,14 @@ public class CardServiceImpl implements CardService {
 	@Override
 	@Transactional
 	public void deleteCard(Long id) {
+		log.info("Удаление карты ID: {}", id);
 		Card card = cardRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Card not found with id: " + id));
+				.orElseThrow(() -> {
+                    log.error("Карта не найдена: ID {}", id);
+                    return new RuntimeException("Карта не найдена");
+                });
 		cardRepository.delete(card);
+		log.info("Карта удалена: ID {}", id);
 	}
 
 	@Override
@@ -155,7 +162,7 @@ public class CardServiceImpl implements CardService {
 		String lastFour = cardNumber.substring(cardNumber.length() - 4);
 		return "**** **** **** " + lastFour;
 	}
-	
+
 	@Override
 	public Page<CardResponse> searchUserCards(Long userId, CardSearchRequest searchRequest, Pageable pageable) {
 		Page<Card> cardsPage;
@@ -180,6 +187,4 @@ public class CardServiceImpl implements CardService {
 			return mapToCardResponse(card, decryptedCardNumber);
 		});
 	}
-
-	
 }

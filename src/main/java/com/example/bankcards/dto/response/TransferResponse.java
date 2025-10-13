@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 
 @Data
 public class TransferResponse {
+	
 	private Long id;
 	private String fromCardMasked;
 	private String toCardMasked;

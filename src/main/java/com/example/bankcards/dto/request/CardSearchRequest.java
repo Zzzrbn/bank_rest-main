@@ -6,10 +6,11 @@ import lombok.Data;
 
 @Data
 public class CardSearchRequest {
-	private CardStatus status;        
-    private Double minBalance;        
-    private Double maxBalance;        
-    private String search;            
-    private String sortBy = "createdAt"; 
-    private String direction = "desc";
+	
+	private CardStatus status;
+	private Double minBalance;
+	private Double maxBalance;
+	private String search;
+	private String sortBy = "createdAt";
+	private String direction = "desc";
 }

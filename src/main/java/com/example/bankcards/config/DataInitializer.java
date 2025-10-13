@@ -15,10 +15,7 @@ import com.example.bankcards.entity.enums.Role;
 import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.UserRepository;
 import com.example.bankcards.security.EncryptionUtil;
-import com.example.bankcards.service.UserService;
-import com.example.bankcards.service.UserServiceImpl;
 
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -34,12 +31,14 @@ public class DataInitializer implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
-		log.info("=== BANK CARD MANAGEMENT SYSTEM ===");
+		log.info("=== Система управления банковскими картами ===");
 		createDefaultUsers();
 		createTestCards();
-		log.info("Default users and test cards created successfully!");
-		log.info("Admin: admin / admin123");
-		log.info("User:  user / user123");
+        log.info("Система успешно запущена и готова к работе!");
+        log.info("Администратор: admin / admin123");
+        log.info("Обычный пользователь: user / user123");
+        log.info("Документация API: http://localhost:8080/swagger-ui/index.html");
+        log.info("Health check: http://localhost:8080/api/health");
 		log.info("===================================");
 	}
 
@@ -48,13 +47,21 @@ public class DataInitializer implements CommandLineRunner {
 			User admin = new User("admin", passwordEncoder.encode("admin123"), "admin@bank.com", "System",
 					"Administrator", Role.ROLE_ADMIN);
 			userRepository.save(admin);
+			log.info("Создан администратор: admin");
 		}
+		else {
+            log.info("Администратор уже существует: admin");
+        }
 
 		if (!userRepository.existsByUsername("user")) {
 			User user = new User("user", passwordEncoder.encode("user123"), "user@bank.com", "John", "Doe",
 					Role.ROLE_USER);
 			userRepository.save(user);
+			log.info("Создан пользователь: user");
 		}
+		else {
+            log.info("Пользователь уже существует: user");
+        }
 	}
 
 	private void createTestCards() {
@@ -71,6 +78,7 @@ public class DataInitializer implements CommandLineRunner {
 			card1.setBalance(new BigDecimal("1000.00"));
 			card1.setUser(user);
 			cardRepository.save(card1);
+			log.info("Создана тестовая карта 1 для пользователя user");
 
 			Card card2 = new Card();
 			card2.setCardNumber(encryptionUtil.encrypt("5555666677778888"));
@@ -81,8 +89,10 @@ public class DataInitializer implements CommandLineRunner {
 			card2.setBalance(new BigDecimal("2500.50"));
 			card2.setUser(user);
 			cardRepository.save(card2);
-
-			log.info("Test cards created for user: user");
-		}
+			log.info("Создана тестовая карта 2 для пользователя user");			
+		} else {
+            log.info("Тестовые карты уже созданы или пользователь не найден");
+        }
+		
 	}
 }

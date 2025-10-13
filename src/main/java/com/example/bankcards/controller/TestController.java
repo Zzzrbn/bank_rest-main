@@ -11,36 +11,21 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api")
 public class TestController {
 		
+	@GetMapping("/public/hello")
+	public Map<String, String> publicHello() {
+		return Map.of("message", "Hello from public endpoint! No auth required.");
+	}
 
-    @GetMapping("/public/hello")
-    public Map<String, String> publicHello() {
-        return Map.of("message", "Hello from public endpoint! No auth required.");
-    }
+	@GetMapping("/user/hello")
+	public Map<String, Object> userHello(Authentication authentication) {
+		return Map.of("message", "Hello user endpoint! Requires authentication.", "username", authentication.getName(),
+				"role", authentication.getAuthorities().iterator().next().getAuthority());
+	}
 
-    @GetMapping("/user/hello")
-    public Map<String, Object> userHello(Authentication authentication) {
-        return Map.of(
-            "message", "Hello user endpoint! Requires authentication.",
-            "username", authentication.getName(),
-            "role", authentication.getAuthorities().iterator().next().getAuthority()
-        );
-    }
+	@GetMapping("/admin/hello")
+	public Map<String, Object> adminHello(Authentication authentication) {
+		return Map.of("message", "Hello admin endpoint! Requires ADMIN role.", "username", authentication.getName(),
+				"role", "ADMIN");
+	}
 
-    @GetMapping("/admin/hello")
-    public Map<String, Object> adminHello(Authentication authentication) {
-        return Map.of(
-            "message", "Hello admin endpoint! Requires ADMIN role.",
-            "username", authentication.getName(),
-            "role", "ADMIN"
-        );
-    }
-
-//    @GetMapping("/user/profile")
-//    public Map<String, Object> userProfile(Authentication authentication) {
-//        return Map.of(
-//            "message", "User profile endpoint",
-//            "username", authentication.getName(),
-//            "authorities", authentication.getAuthorities()
-//        );
-//    }
 }

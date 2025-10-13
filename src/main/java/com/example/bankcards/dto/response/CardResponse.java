@@ -10,13 +10,14 @@ import lombok.Data;
 
 @Data
 public class CardResponse {
-    private Long id;
-    private String maskedCardNumber;
-    private String cardHolder;
-    private LocalDate expiryDate;
-    private CardStatus status;
-    private BigDecimal balance;
-    private Long userId;
-    private LocalDateTime createdAt;
-    private boolean expired;
+	
+	private Long id;
+	private String maskedCardNumber;
+	private String cardHolder;
+	private LocalDate expiryDate;
+	private CardStatus status;
+	private BigDecimal balance;
+	private Long userId;
+	private LocalDateTime createdAt;
+	private boolean expired;
 }

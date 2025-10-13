@@ -2,6 +2,7 @@ package com.example.bankcards.service;
 
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 
@@ -19,96 +20,100 @@ import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.TransferRepository;
 import com.example.bankcards.security.EncryptionUtil;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TransferServiceImpl implements TransferService{
 	
 	private final TransferRepository transferRepository;
-    private final CardRepository cardRepository;
-    private final ModelMapper modelMapper;
-    private final EncryptionUtil encryptionUtil;
+	private final CardRepository cardRepository;
+	private final ModelMapper modelMapper;
+	private final EncryptionUtil encryptionUtil;
 
-    @Override
-    @Transactional
-    public TransferResponse transferBetweenOwnCards(Long userId, TransferRequest request) {
-        
-    	if (request.getFromCardId().equals(request.getToCardId())) {
-            throw new RuntimeException("Нельзя переводить на ту же карту");
-        }
+	@Override
+	@Transactional
+	public TransferResponse transferBetweenOwnCards(Long userId, TransferRequest request) {
+        log.info("Перевод между картами пользователя ID: {}", userId);
+        log.info("С карты: {}, На карту: {}, Сумма: {}", 
+                 request.getFromCardId(), request.getToCardId(), request.getAmount());
+		
+		if (request.getFromCardId().equals(request.getToCardId())) {
+			throw new RuntimeException("Нельзя переводить на ту же карту");
+		}
 
-        if (request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException("Сумма перевода должна быть больше нуля");
-        }
+		if (request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+			throw new RuntimeException("Сумма перевода должна быть больше нуля");
+		}
 
-        Card fromCard = cardRepository.findByIdAndUserId(request.getFromCardId(), userId)
-                .orElseThrow(() -> new RuntimeException("Карта отправителя не найдена или вам не принадлежит"));
+		Card fromCard = cardRepository.findByIdAndUserId(request.getFromCardId(), userId)
+				.orElseThrow(() -> new RuntimeException("Карта отправителя не найдена или вам не принадлежит"));
 
-        Card toCard = cardRepository.findByIdAndUserId(request.getToCardId(), userId)
-                .orElseThrow(() -> new RuntimeException("Карта получателя не найдена или вам не принадлежит"));
+		Card toCard = cardRepository.findByIdAndUserId(request.getToCardId(), userId)
+				.orElseThrow(() -> new RuntimeException("Карта получателя не найдена или вам не принадлежит"));
 
-        if (!fromCard.isActive()) {
-            throw new RuntimeException("Карта отправителя не активна");
-        }
-        if (!toCard.isActive()) {
-            throw new RuntimeException("Карта получателя не активна");
-        }
+		if (!fromCard.isActive()) {
+			throw new RuntimeException("Карта отправителя не активна");
+		}
+		if (!toCard.isActive()) {
+			throw new RuntimeException("Карта получателя не активна");
+		}
 
-        if (fromCard.getBalance().compareTo(request.getAmount()) < 0) {
-            throw new RuntimeException("Недостаточно средств на карте отправителя");
-        }
+		if (fromCard.getBalance().compareTo(request.getAmount()) < 0) {
+			throw new RuntimeException("Недостаточно средств на карте отправителя");
+		}
 
-        fromCard.setBalance(fromCard.getBalance().subtract(request.getAmount()));
-        toCard.setBalance(toCard.getBalance().add(request.getAmount()));
+		fromCard.setBalance(fromCard.getBalance().subtract(request.getAmount()));
+		toCard.setBalance(toCard.getBalance().add(request.getAmount()));
 
-        cardRepository.save(fromCard);
-        cardRepository.save(toCard);
+		cardRepository.save(fromCard);
+		cardRepository.save(toCard);
 
-        Transfer transfer = new Transfer();
-        transfer.setFromCard(fromCard);
-        transfer.setToCard(toCard);
-        transfer.setAmount(request.getAmount());
-        transfer.setDescription(request.getDescription());
+		Transfer transfer = new Transfer();
+		transfer.setFromCard(fromCard);
+		transfer.setToCard(toCard);
+		transfer.setAmount(request.getAmount());
+		transfer.setDescription(request.getDescription());
 
-        Transfer savedTransfer = transferRepository.save(transfer);
-        return mapToTransferResponse(savedTransfer);
-    }
+		Transfer savedTransfer = transferRepository.save(transfer);
+		
+		log.info("Перевод успешно выполнен");
+		return mapToTransferResponse(savedTransfer);
+	}
 
-    @Override
-    public Page<TransferResponse> getUserTransfers(Long userId, Pageable pageable) {
-        return transferRepository.findByUserId(userId, pageable)
-                .map(this::mapToTransferResponse);
-    }
+	@Override
+	public Page<TransferResponse> getUserTransfers(Long userId, Pageable pageable) {
+		return transferRepository.findByUserId(userId, pageable).map(this::mapToTransferResponse);
+	}
 
-    @Override
-    public Page<TransferResponse> getAllTransfers(Pageable pageable) {
-        return transferRepository.findAll(pageable)
-                .map(this::mapToTransferResponse);
-    }
+	@Override
+	public Page<TransferResponse> getAllTransfers(Pageable pageable) {
+		return transferRepository.findAll(pageable).map(this::mapToTransferResponse);
+	}
 
-    @Override
-    public TransferResponse getTransferById(Long id) {
-        Transfer transfer = transferRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Transfer not found"));
-        return mapToTransferResponse(transfer);
-    }
+	@Override
+	public TransferResponse getTransferById(Long id) {
+		Transfer transfer = transferRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Transfer not found"));
+		return mapToTransferResponse(transfer);
+	}
 
-    private TransferResponse mapToTransferResponse(Transfer transfer) {
-        TransferResponse response = modelMapper.map(transfer, TransferResponse.class);
-        
-        String fromCardNumber = encryptionUtil.decrypt(transfer.getFromCard().getCardNumber());
-        String toCardNumber = encryptionUtil.decrypt(transfer.getToCard().getCardNumber());
-        
-        response.setFromCardMasked(maskCardNumber(fromCardNumber));
-        response.setToCardMasked(maskCardNumber(toCardNumber));
-        
-        return response;
-    }
+	private TransferResponse mapToTransferResponse(Transfer transfer) {
+		TransferResponse response = modelMapper.map(transfer, TransferResponse.class);
 
-    private String maskCardNumber(String cardNumber) {
-        if (cardNumber == null || cardNumber.length() < 4) {
-            return cardNumber;
-        }
-        String lastFour = cardNumber.substring(cardNumber.length() - 4);
-        return "**** **** **** " + lastFour;
-    }
+		String fromCardNumber = encryptionUtil.decrypt(transfer.getFromCard().getCardNumber());
+		String toCardNumber = encryptionUtil.decrypt(transfer.getToCard().getCardNumber());
+
+		response.setFromCardMasked(maskCardNumber(fromCardNumber));
+		response.setToCardMasked(maskCardNumber(toCardNumber));
+
+		return response;
+	}
+
+	private String maskCardNumber(String cardNumber) {
+		if (cardNumber == null || cardNumber.length() < 4) {
+			return cardNumber;
+		}
+		String lastFour = cardNumber.substring(cardNumber.length() - 4);
+		return "**** **** **** " + lastFour;
+	}
 }

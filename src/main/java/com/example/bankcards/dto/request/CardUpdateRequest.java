@@ -9,9 +9,9 @@ import lombok.Data;
 @Data
 public class CardUpdateRequest {
 	
-	@NotBlank(message = "Card holder is required")
-    private String cardHolder;
+	@NotBlank(message = "Имя владельца карты обязательно")
+	private String cardHolder;
 
-    @Future(message = "Expiry date must be in the future")
-    private LocalDate expiryDate;
+	@Future(message = "Дата истечения должна быть в будущем")
+	private LocalDate expiryDate;
 }

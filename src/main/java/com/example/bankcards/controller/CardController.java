@@ -18,25 +18,32 @@ import com.example.bankcards.dto.response.CardResponse;
 import com.example.bankcards.entity.enums.CardStatus;
 import com.example.bankcards.service.CardService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/api/cards")
 @RequiredArgsConstructor
+@Tag(name = "Карты", description = "API для управления банковскими картами")
 public class CardController {
 	
 	private final CardService cardService;
 
 	@PostMapping
 	@PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Создать новую карту", description = "Только для администраторов. Создает новую банковскую карту для пользователя.")
 	public ResponseEntity<CardResponse> createCard(@Valid @RequestBody CardCreateRequest request) {
 		return ResponseEntity.ok(cardService.createCard(request));
 	}
 
 	@GetMapping("/{id}")
+    @Operation(summary = "Получить карту по ID", description = "Возвращает информацию о карте по её идентификатору")
 	public ResponseEntity<CardResponse> getCard(@PathVariable Long id) {
 		return ResponseEntity.ok(cardService.getCardById(id));
 	}
 
 	@GetMapping("/user/{userId}")
+    @Operation(summary = "Получить карты пользователя", description = "Возвращает список карт пользователя с пагинацией")
 	public ResponseEntity<Page<CardResponse>> getUserCards(@PathVariable Long userId,
 			@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size,
 			@RequestParam(defaultValue = "createdAt") String sortBy,
@@ -50,6 +57,7 @@ public class CardController {
 
 	@GetMapping
 	@PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Получить все карты", description = "Поиск всех карт с пагинацией")
 	public ResponseEntity<Page<CardResponse>> getAllCards(@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "10") int size) {
 
@@ -59,13 +67,15 @@ public class CardController {
 
 	@PatchMapping("/{id}/status")
 	@PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Обновить статус карты", description = "Только для администраторов. Изменить статус карты")
 	public ResponseEntity<CardResponse> updateCardStatus(@PathVariable Long id, @RequestParam CardStatus status) {
 
 		return ResponseEntity.ok(cardService.updateCardStatus(id, status));
 	}
 
 	@PutMapping("/{id}")
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasRole('ADMIN')") 
+    @Operation(summary = "Изменить параметры карты", description = "Только для администраторов. Ищменить карту в соответствии с заданными параметрами")
 	public ResponseEntity<CardResponse> updateCard(@PathVariable Long id,
 			@Valid @RequestBody CardUpdateRequest request) {
 
@@ -74,12 +84,14 @@ public class CardController {
 
 	@DeleteMapping("/{id}")
 	@PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Удалить карту", description = "Только для администраторов. Удаалить карту")
 	public ResponseEntity<Void> deleteCard(@PathVariable Long id) {
 		cardService.deleteCard(id);
 		return ResponseEntity.ok().build();
 	}
-	
+
 	@PostMapping("/user/{userId}/search")
+    @Operation(summary = "Поиск карт с фильтрами", description = "Поиск карт пользователя с различными фильтрами: по статусу, балансу, имени владельца")
 	public ResponseEntity<Page<CardResponse>> searchUserCards(@PathVariable Long userId,
 			@RequestBody CardSearchRequest searchRequest, @RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "10") int size) {
@@ -105,7 +117,7 @@ public class CardController {
 			try {
 				searchRequest.setStatus(CardStatus.valueOf(status.toUpperCase()));
 			} catch (IllegalArgumentException e) {
-				// Если статус невалидный - игнорируем
+
 			}
 		}
 
